@@ -1,0 +1,8 @@
+{
+    "client_id":"Client_Id_13b7837a2863d760ebaee942979565de768e8c69",
+    "client_secret":"Client_Secret_e954e51aa5500af470362ed278a4898011d44843",
+    "pix_cert":"../certs/homologacao.pem",
+    "sandbox": true,
+    "debug": false,
+    "timeout": 30
+}
