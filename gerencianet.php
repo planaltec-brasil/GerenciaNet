@@ -1,5 +1,7 @@
 <?php
-
+$dataIni = date(DATE_ATOM, mktime(0, 0, 0, date('m'), date('d'), date('Y')));
+echo "<br >";
+$dataFim = date(DATE_ATOM, mktime(23, 59, 59, date('m'), date('d'), date('Y')));
 class Gerencianet {
 
     private $urlHomologacao = 'https://api-pix-h.gerencianet.com.br';
@@ -10,11 +12,95 @@ class Gerencianet {
     private $certificadoDigital = 'homologacao.pem';
     
     private $ambiente = 0;
+    private $token_type = '';
+    private $access_token = '';
 
     function __construct($ambiente = 0) {
         $this->ambiente = $ambiente;
     }
+
+    public function consultaPixUnico($e2e){
+        if($this->token_type == '')
+            return false;
+
+        $url = ($this->ambiente == 0 ? $this->urlProducao : $this->urlHomologacao) . '/v2/gn/pix/enviados/' .$e2e;
+        
+        $header = array(
+            "Content-Type: application/json",
+            "Authorization: " . $this->token_type . " " . $this->access_token,
+        );
+
+        $dados = [
+        ];
+        $response = $this->requisicao($url, $dados, $header, 'GET');
+        return $response;
+    }
+
+    public function solicitaDevolucao($idEnvio, $e2e, $valor){
+        if($this->token_type == '')
+            return false;
+
+        $url = ($this->ambiente == 0 ? $this->urlProducao : $this->urlHomologacao) . "/v2/pix/$e2e/devolucao/$idEnvio";
+        $header = array(
+            "Content-Type: application/json",
+            "Authorization: " . $this->token_type . " " . $this->access_token,
+        );
+
+        $dados = [
+            'valor' => $valor
+        ];
+
+        $response = $this->requisicao($url, $dados, $header, 'PUT');
+        return $response;
+    }
     
+    public function consultaListaPix($inicio, $fim, $status = null){
+        if($this->token_type == '')
+            return false;
+
+        $url = ($this->ambiente == 0 ? $this->urlProducao : $this->urlHomologacao) . '/v2/gn/pix/enviados/';
+        
+        $header = array(
+            "Content-Type: application/json",
+            "Authorization: " . $this->token_type . " " . $this->access_token,
+        );
+
+        $dados = [
+            'inicio' => $inicio,
+            'fim' => $fim
+
+        ];
+        $response = $this->requisicao($url, $dados, $header, 'GET');
+        return $response;
+
+    }
+    
+    public function envioPix($idEnvio, $valor = 0, $chave_pagador = '', $info_pagador = '', $chave_favorecido){ 
+        if($this->token_type == '')
+            return false;
+
+        $url = ($this->ambiente == 0 ? $this->urlProducao : $this->urlHomologacao) . '/v2/gn/pix/' . $idEnvio;
+
+        $dados = [
+            'valor' => $valor,
+            'pagador' => [
+                'chave' => $chave_pagador,
+                'infoPagador' => $info_pagador
+            ],
+            'favorecido' => [
+                'chave' => $chave_favorecido
+            ]
+        ];
+
+        $header = array(
+            "Content-Type: application/json",
+            "Authorization: " . $this->token_type . " " . $this->access_token,
+        );
+
+        $response = $this->requisicao($url, $dados, $header, 'PUT');
+        return $response;
+    }
+
     public function Autenticacao () {
         $url = ($this->ambiente == 0 ? $this->urlProducao : $this->urlHomologacao) . '/oauth/token';
 
@@ -26,8 +112,32 @@ class Gerencianet {
         );
 
         $response = $this->requisicao($url, [ "grant_type" => "client_credentials" ], $header, 'POST');
-        return $response;
+        if(isset($response['body']['token_type'])){
+            $this->token_type = $response['body']['token_type'];
+            $this->access_token = $response['body']['access_token'];
+        }
 
+    }
+
+    public function configWebhook($chave) {
+        if($this->token_type == '')
+            return false;
+
+        $url = ($this->ambiente == 0 ? $this->urlProducao : $this->urlHomologacao) . '/v2/webhook/' . $chave;
+
+        $dados = [
+            'webhookUrl' => "https://webhook.site/b9f44ae5-b9b8-4644-ac5c-4e0a4797589e",
+            // 'webhookUrl' => "https://gsplanaltec.com/GerenciamentoServicos/APIControle/webhook",
+        ];
+
+        $header = array(
+            "Content-Type: application/json",
+            "Authorization: " . $this->token_type . " " . $this->access_token,
+            "x-skip-mtls-checking: true"
+        );
+
+        $response = $this->requisicao($url, $dados, $header, 'PUT');
+        return $response;
     }
 
     private function requisicao($url, $data = array(), $header = array(), $type = "POST"){        
@@ -48,7 +158,7 @@ class Gerencianet {
         curl_setopt($curl, CURLOPT_SSLCERT, realpath($this->certificadoDigital));
         // curl_setopt($curl, CURLOPT_SSLCERTPASSWD, '');
         
-        if($type == 'POST') {
+        if($type != 'GET') {
             curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
         }
         
@@ -66,5 +176,9 @@ class Gerencianet {
 
 
 $teste = new Gerencianet(1);
-
-var_dump($teste->Autenticacao());
+$teste->Autenticacao();
+$teste->configWebhook('09089356000118');
+$ep = $teste->envioPix('5585498A487SA41A651S78H8D', '0.01', '09089356000118', "Segue o pagamento da conta", "efipay@sejaefi.com.br");
+$pixUnic = $teste->consultaListaPix($dataIni, $dataFim);
+$solicTroca = $teste->solicitaDevolucao('88185565sa14ds98dsf87ds5465a6a', 'E09089356202308011712APIDICT911f', '0.01');
+var_dump($solicTroca);
