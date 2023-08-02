@@ -36,6 +36,25 @@ class Gerencianet {
         return $response;
     }
 
+    
+    public function consultaDevolucao($idEnvio, $e2e, $valor){
+        if($this->token_type == '')
+            return false;
+
+        $url = ($this->ambiente == 0 ? $this->urlProducao : $this->urlHomologacao) . "/v2/pix/$e2e/devolucao/$idEnvio";
+        $header = array(
+            "Content-Type: application/json",
+            "Authorization: " . $this->token_type . " " . $this->access_token,
+        );
+
+        $dados = [
+            'valor' => $valor
+        ];
+
+        $response = $this->requisicao($url, $dados, $header, 'GET');
+        return $response;
+    }
+
     public function solicitaDevolucao($idEnvio, $e2e, $valor){
         if($this->token_type == '')
             return false;
