@@ -12,11 +12,18 @@ class Gerencianet {
     private $certificadoDigital = 'homologacao.pem';
     
     private $ambiente = 0;
+    
     private $token_type = '';
     private $access_token = '';
 
     function __construct($ambiente = 0) {
         $this->ambiente = $ambiente;
+
+        if($ambiente == 1) {
+            $this->certificadoDigital = 'producao.pem';
+        } else {
+            $this->certificadoDigital = 'homologacao.pem';
+        }
     }
 
 //WH = Webhook
