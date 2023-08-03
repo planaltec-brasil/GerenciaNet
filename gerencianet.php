@@ -19,7 +19,7 @@ class Gerencianet {
     function __construct($ambiente = 0) {
         $this->ambiente = $ambiente;
 
-        if($ambiente == 1) {
+        if($ambiente == 0) {
             $this->certificadoDigital = 'producao.pem';
         } else {
             $this->certificadoDigital = 'homologacao.pem';
@@ -122,24 +122,24 @@ class Gerencianet {
         return $response;
     }
 
-    // public function recebendoCallback(){
-    //     if($this->token_type == '')
-    //     return false;
+    public function recebendoCallback(){
+        if($this->token_type == '')
+            return false;
 
-    //     $url = ($this->ambiente == 0 ? $this->urlProducao : $this->urlHomologacao) . '/v2/webhook/';
+        $url = ($this->ambiente == 0 ? $this->urlProducao : $this->urlHomologacao) . '/v2/webhook/';
 
-    //     $header = array(
-    //         "Content-Type: application/json",
-    //         "Authorization: " . $this->token_type . " " . $this->access_token,
-    //     );
+        $header = array(
+            "Content-Type: application/json",
+            "Authorization: " . $this->token_type . " " . $this->access_token,
+        );
 
-    //     $dados = [
-    //         $endToEndId => 'endToEndId',
-    //         $valor => 'valor'
-    //     ];
-    //     $response = $this->requisicao($url, $dados, $header, 'GET');
-    //     return $response;
-    // }
+        $dados = [
+            $endToEndId => 'endToEndId',
+            $valor => 'valor'
+        ];
+        $response = $this->requisicao($url, $dados, $header, 'GET');
+        return $response;
+    } 
 
     public function consultaPixUnico($e2e){
         if($this->token_type == '')
@@ -215,10 +215,10 @@ class Gerencianet {
 
     }
     
-    public function envioPix($idEnvio, $valor = 0, $chave_pagador = '', $info_pagador = '', $chave_favorecido){ 
+    public function envioPix($idEnvio, $valor = 0, $chave_pagador = '', $info_pagador = '', $chave_favorecido){
         if($this->token_type == '')
             return false;
-
+    
         $url = ($this->ambiente == 0 ? $this->urlProducao : $this->urlHomologacao) . '/v2/gn/pix/' . $idEnvio;
 
         $dados = [
@@ -236,7 +236,7 @@ class Gerencianet {
             "Content-Type: application/json",
             "Authorization: " . $this->token_type . " " . $this->access_token,
         );
-
+        
         $response = $this->requisicao($url, $dados, $header, 'PUT');
         return $response;
     }
@@ -252,9 +252,12 @@ class Gerencianet {
         );
 
         $response = $this->requisicao($url, [ "grant_type" => "client_credentials" ], $header, 'POST');
+        
         if(isset($response['body']['token_type'])){
             $this->token_type = $response['body']['token_type'];
             $this->access_token = $response['body']['access_token'];
+        } else {
+            var_dump($response);
         }
 
     }
@@ -318,7 +321,7 @@ class Gerencianet {
 $teste = new Gerencianet(1);
 $teste->Autenticacao();
 $teste->configWebhook('09089356000118');
-$ep = $teste->envioPix('541871818181as8a1da8787as8', '0.01', '09089356000118', "Segue o pagamento da conta", "efipay@sejaefi.com.br");
+$ep = $teste->envioPix('51a8ds181818851a651788965sa', '0.01', '09089356000118', "Segue o pagamento da conta", "efipay@sejaefi.com.br");
 // $pixUnic = $teste->consultaListaPix($dataIni, $dataFim);
-$solicitaDownload = $teste->solicitaDownloadExtratoConc("541871818181as8a1da8787as8");
-var_dump($solicitaDownload);
+// $recCallback = $teste->recebendoCallback();
+var_dump($ep);
